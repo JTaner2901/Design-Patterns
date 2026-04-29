@@ -7,7 +7,7 @@ function App() {
 
   return (
     <>
-      <DesignPattern />
+      <DesignPattern/>
     </>
   )
 }
