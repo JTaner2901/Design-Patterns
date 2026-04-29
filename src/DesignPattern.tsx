@@ -1,84 +1,73 @@
 import { useEffect, useRef, useState } from "react";
 import p5 from "p5";
 
-type UISettings = {
-  rows: number;
-  cols: number;
-  colorIndex: number;
-  spread: number;
-};
-
-const COLOR_PRESETS = [
-  { name: "Blue",   a: [0, 180, 255],   b: [20, 60, 220] },
-  { name: "Purple", a: [180, 0, 255],   b: [80, 0, 180] },
-  { name: "Red",    a: [255, 60, 60],   b: [120, 0, 0] },
-  { name: "Gold",   a: [255, 200, 0],   b: [180, 120, 0] },
-  { name: "White",  a: [255, 255, 255], b: [180, 180, 180] },
-];
-
+// ============================================================
+//  SETTINGS — alle Steuerparameter zentral hier anpassen
+// ============================================================
 const SETTINGS = {
-  radius: 120,
-  boxSize: 18,
-  strokeWeight: 1.2,
-  glowLayers: 2,
-  glowOffset: 0.8,
+  // --- Grid / Struktur ---
+  zAngleStep: 30, // Winkelschritte auf Z-Achse (Grad) → mehr = weniger Ringe
+  xAngleStep: 30, // Winkelschritte auf X-Achse (Grad) → mehr = weniger Boxen pro Ring
+  radius: 120, // Kugelradius in absoluten Pixeln (unabhängig von Canvas-Größe)
 
-  zoomSensitivity: 120,
-  zoomMin: 40,
-  zoomMax: 400000,
-  zoomDefault: 9000,
+  // --- Box-Größe ---
+  boxSize: 18, // Kantenlänge der einzelnen Boxen (px)
 
-  fov: 60,
-  easing: 0.12,
+  // --- Rotation ---
+  autoRotateSpeed: 0.12, // Grad pro Frame bei Auto-Rotation
+  autoRotate: true, // Auto-Rotation an/aus
+  mouseRotateStrength: 0.004, // Wie stark die Mausbewegung rotiert
+
+  // --- Zoom ---
+  zoomSensitivity: 12, // Scroll-Zoom-Stärke (px pro Scroll-Event)
+  zoomMin: 40, // Minimale Kameradistanz
+  zoomMax: 40000, // Maximale Kameradistanz
+  zoomDefault: 900, // Startzoom — sieht alles bei radius=120
+
+  // --- Farben ---
+  bgColor: [4, 8, 24], // Hintergrundfarbe (RGB) — tiefes Navy
+  colorA: [0, 180, 255], // Gradient-Farbe A (Cyan)
+  colorB: [20, 60, 220], // Gradient-Farbe B (Deep Blue)
+  colorAccent: [120, 240, 255], // Akzentfarbe für Hover / Spitzen
+  gradientSpeed: 0.005, // Wie schnell der Gradient pulsiert
+
+  // --- Stil ---
+  useFill: false, // true = Box mit Füllung, false = nur Outline
+  strokeWeight: 1.2, // Linienstärke
+  fillAlpha: 60, // Füll-Alpha wenn useFill = true (0–255)
+
+  // --- Glow / Post-FX (simuliert via mehrere Lagen) ---
+  glowLayers: 2, // Anzahl Glow-Kopien (0 = kein Glow, max 3)
+  glowOffset: 0.8, // Größen-Offset pro Glow-Layer
+
+  // --- Kamera ---
+  fov: 60, // Kamera-Sichtfeld in Grad
+  easing: 0.06, // Interpolations-Stärke für sanfte Rotations-Bewegung (0.01–0.15)
 };
+// ============================================================
 
 export default function DesignPattern() {
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const [rows, setRows]           = useState(6);
-  const [cols, setCols]           = useState(12);
-  const [colorIndex, setColorIndex] = useState(0);
-  const [spread, setSpread]       = useState(1.0);
-
-  const settingsRef = useRef<UISettings>({
-    rows: 6,
-    cols: 12,
-    colorIndex: 0,
-    spread: 1.0,
-  });
-
-  const sync = (key: keyof UISettings, value: number) => {
-    settingsRef.current[key] = value;
-
-    if (key === "rows")       setRows(value);
-    if (key === "cols")       setCols(value);
-    if (key === "colorIndex") setColorIndex(value);
-    if (key === "spread")     setSpread(value);
-  };
 
   useEffect(() => {
     if (!containerRef.current) return;
 
     const sketch = (p: p5) => {
-      // 🎮 CAMERA ROTATION
-      let rotX = 0;
-      let rotY = 0;
-      let targetRotX = 0;
-      let targetRotY = 0;
+      // ----- Zustandsvariablen -----
+      let rotX = 0; // aktuelle X-Rotation der Szene
+      let rotY = 0; // aktuelle Y-Rotation der Szene
+      let targetRotX = 0; // Ziel-X-Rotation (für Easing)
+      let targetRotY = 0; // Ziel-Y-Rotation (für Easing)
+      let autoRotOffset = 0; // akkumulierter Auto-Rotate-Winkel
 
       let camDist = SETTINGS.zoomDefault;
       let targetCamDist = SETTINGS.zoomDefault;
 
-      let dragging = false;
-      let lastX = 0;
-      let lastY = 0;
+      let isDragging = false;
+      let lastMouseX = 0;
+      let lastMouseY = 0;
 
-      const dragSpeed = 0.1;
-      const friction  = 0.86;
-
-      let velX = 0;
-      let velY = 0;
-
+      // ----- Setup -----
       p.setup = () => {
         const w = containerRef.current?.offsetWidth  || 800;
         const h = containerRef.current?.offsetHeight || 500;
@@ -91,54 +80,44 @@ export default function DesignPattern() {
       };
 
       p.draw = () => {
-        p.background(0);
-
-        const { rows, cols, colorIndex, spread } = settingsRef.current;
-        const preset = COLOR_PRESETS[colorIndex];
+        // Hintergrund
+        p.background(
+          SETTINGS.bgColor[0],
+          SETTINGS.bgColor[1],
+          SETTINGS.bgColor[2],
+        );
 
         // camera
         camDist = p.lerp(camDist, targetCamDist, SETTINGS.easing);
         p.camera(0, 0, camDist, 0, 0, 0, 0, 1, 0);
 
-        // inertia
-        velX *= friction;
-        velY *= friction;
+        // Auto-Rotation akkumulieren
+        if (SETTINGS.autoRotate) {
+          autoRotOffset += SETTINGS.autoRotateSpeed;
+          targetRotY = autoRotOffset;
+        }
 
-        targetRotX += velX;
-        targetRotY += velY;
-
-        targetRotX = p.constrain(targetRotX, -85, 85);
-
-        rotX = p.lerp(rotX, targetRotX, 0.12);
-        rotY = p.lerp(rotY, targetRotY, 0.12);
+        // Smooth Easing zur Zielrotation
+        rotX = p.lerp(rotX, targetRotX, SETTINGS.easing);
+        rotY = p.lerp(rotY, targetRotY, SETTINGS.easing);
 
         p.rotateX(rotX);
         p.rotateY(rotY);
 
-        drawGrid(p, rows, cols, spread, preset);
+        // Alle Boxen zeichnen
+        drawBoxGrid();
       };
 
-      function drawGrid(
-        p: p5,
-        rows: number,
-        cols: number,
-        spread: number,
-        preset: (typeof COLOR_PRESETS)[number]
-      ) {
-        const t = p.frameCount * 0.02;
+      // ----- Box-Gitter zeichnen -----
+      function drawBoxGrid() {
+        const t = p.frameCount * SETTINGS.gradientSpeed * 360; // Zeit-Parameter für Gradient
 
-        // Radius und Boxgröße skalieren mit spread
-        const radius = SETTINGS.radius * spread;
-        const boxSz  = SETTINGS.boxSize * Math.max(0.3, spread * 0.6 + 0.4);
-
-        const zStep = 180 / rows;
-        const xStep = 360 / cols;
-
-        for (let z = 0; z < 180; z += zStep) {
-          for (let x = 0; x < 360; x += xStep) {
-            const wave =
-              ((z / 180 + x / 360) * 0.5 +
-                Math.sin((t + z + x) * 0.05) * 0.5 +
+        for (let zAngle = 0; zAngle < 180; zAngle += SETTINGS.zAngleStep) {
+          for (let xAngle = 0; xAngle < 360; xAngle += SETTINGS.xAngleStep) {
+            // Gradient-Faktor: kombiniert Position + Zeit für dynamischen Look
+            const gradT =
+              ((zAngle / 180 + xAngle / 360) * 0.5 +
+                Math.sin((t + zAngle + xAngle) * 0.01) * 0.5 +
                 0.5) %
               1;
 
@@ -147,19 +126,23 @@ export default function DesignPattern() {
             const b = p.lerp(preset.b[2], preset.a[2], wave);
 
             for (let gl = SETTINGS.glowLayers; gl >= 0; gl--) {
-              const size =
-                boxSz + gl * SETTINGS.glowOffset * boxSz * 0.25;
-
-              const alpha = gl > 0 ? p.map(gl, 1, 2, 60, 20) : 255;
+              const isGlow = gl > 0;
+              const glowSize =
+                SETTINGS.boxSize +
+                gl * SETTINGS.glowOffset * SETTINGS.boxSize * 0.25;
+              const alpha = isGlow
+                ? p.map(gl, 1, SETTINGS.glowLayers, 60, 15)
+                : 255;
 
               p.push();
-              p.rotateZ(z);
-              p.rotateX(x);
-              p.translate(0, radius, 0);
+              p.rotateZ(zAngle);
+              p.rotateX(xAngle);
+
+              p.translate(0, SETTINGS.radius, 0);
 
               p.stroke(r, g, b, alpha);
               p.strokeWeight(
-                gl > 0 ? SETTINGS.strokeWeight * 2 : SETTINGS.strokeWeight
+                isGlow ? SETTINGS.strokeWeight * 2 : SETTINGS.strokeWeight,
               );
 
               p.noFill();
@@ -170,7 +153,7 @@ export default function DesignPattern() {
         }
       }
 
-      // 🖱️ DRAG
+      // ----- Maus: Drag für Rotation -----
       p.mousePressed = () => {
         dragging = true;
         lastX = p.mouseX;
@@ -182,21 +165,37 @@ export default function DesignPattern() {
       };
 
       p.mouseDragged = () => {
-        if (!dragging) return;
+        if (!isDragging) return;
+        const dx = p.mouseX - lastMouseX;
+        const dy = p.mouseY - lastMouseY;
 
-        const dx = p.mouseX - lastX;
-        const dy = p.mouseY - lastY;
+        targetRotY += dx * SETTINGS.mouseRotateStrength * 60;
+        targetRotX += dy * SETTINGS.mouseRotateStrength * 60;
 
-        velY += dx * dragSpeed;
-        velX += dy * dragSpeed;
+        // X-Rotation begrenzen (nicht überschlagen)
+        targetRotX = p.constrain(targetRotX, -70, 70);
 
-        lastX = p.mouseX;
-        lastY = p.mouseY;
+        lastMouseX = p.mouseX;
+        lastMouseY = p.mouseY;
+
+        if (SETTINGS.autoRotate) autoRotOffset = targetRotY;
       };
 
-      // ZOOM
-      p.mouseWheel = (e: WheelEvent) => {
-        targetCamDist += e.deltaY * SETTINGS.zoomSensitivity;
+      // ----- Mausbewegung (ohne Drag) beeinflusst subtil die Szene -----
+      p.mouseMoved = () => {
+        if (isDragging) return;
+        // Sehr subtile parallax-artige Beeinflussung
+        const nx = (p.mouseX / p.width - 0.5) * 2; // -1 bis +1
+        const ny = (p.mouseY / p.height - 0.5) * 2; // -1 bis +1
+        if (!SETTINGS.autoRotate) {
+          targetRotY += nx * 0.08;
+          targetRotX = p.constrain(ny * 20, -70, 70);
+        }
+      };
+
+      // ----- Scroll für Zoom -----
+      p.mouseWheel = (event: WheelEvent) => {
+        targetCamDist += event.deltaY * SETTINGS.zoomSensitivity;
         targetCamDist = p.constrain(
           targetCamDist,
           SETTINGS.zoomMin,
@@ -207,11 +206,12 @@ export default function DesignPattern() {
 
       p.windowResized = () => {
         if (!containerRef.current) return;
-
-        p.resizeCanvas(
-          containerRef.current.offsetWidth,
-          containerRef.current.offsetHeight
-        );
+        const w = containerRef.current.offsetWidth;
+        const h = containerRef.current.offsetHeight;
+        p.resizeCanvas(w, h);
+        // Perspektive nach Resize neu berechnen
+        const fovRad = (SETTINGS.fov * Math.PI) / 180;
+        p.perspective(fovRad, w / h, 1, 8000);
       };
     };
 
@@ -231,63 +231,15 @@ export default function DesignPattern() {
           left: 20,
           color: "white",
           fontFamily: "monospace",
-          fontSize: 12,
+          fontSize: "11px",
+          letterSpacing: "0.08em",
+          userSelect: "none",
+          pointerEvents: "none",
         }}
       >
-        <div>
-          Rows: {rows}
-          <input
-            type="range"
-            min={2}
-            max={20}
-            step={1}
-            value={rows}
-            onChange={(e) => sync("rows", Number(e.target.value))}
-          />
-        </div>
-
-        <div>
-          Columns: {cols}
-          <input
-            type="range"
-            min={4}
-            max={40}
-            step={1}
-            value={cols}
-            onChange={(e) => sync("cols", Number(e.target.value))}
-          />
-        </div>
-
-        <div>
-          Spread: {spread.toFixed(2)}
-          <input
-            type="range"
-            min={0.2}
-            max={8.0}
-            step={0.05}
-            value={spread}
-            onChange={(e) => sync("spread", Number(e.target.value))}
-          />
-        </div>
-
-        <div style={{ marginTop: 10 }}>
-          {COLOR_PRESETS.map((c, i) => (
-            <button
-              key={i}
-              onClick={() => sync("colorIndex", i)}
-              style={{
-                marginRight: 6,
-                padding: "4px 8px",
-                background: i === colorIndex ? "#fff" : "#222",
-                color: i === colorIndex ? "#000" : "#fff",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              {c.name}
-            </button>
-          ))}
-        </div>
+        <span>DRAG · Rotate</span>
+        <span>SCROLL · Zoom</span>
+        <span>DBLCLICK · Toggle Auto</span>
       </div>
     </div>
   );
