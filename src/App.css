@@ -1,29 +1,21 @@
 /* App.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Verhindert Scrollbars und sorgt für volle Fläche */
-#root {
-  width: 100%;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: #f0f0f0; /* Ein heller Hintergrund passend zu deinem p5-Sketch */
-  margin: 0;
-}
-
-/* Sorgt dafür, dass das p5-Canvas gut sitzt */
-canvas {
-  display: block;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  border-radius: 8px;
-}
-
-/* In die App.css oder index.css */
+/* Setzt alles auf die volle Fenstergröße zurück ohne Flex-Zentrierung */
 html, body, #root {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden; /* Verhindert Scrollen */
+  overflow: hidden; 
+  background-color: #000000; /* Standardmäßig schwarz für Shader-Hintergründe */
+}
+
+/* Canvas-Reset: Entfernt Eckenrundung und Schatten, damit es Fullscreen sein kann */
+canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }

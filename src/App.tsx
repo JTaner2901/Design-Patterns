@@ -1,15 +1,16 @@
-import { useState } from 'react'
-import './App.css'
-import DesignPattern from './DesignPattern'
+import { useState } from "react";
+import "./App.css";
+import DesignPattern from "./DesignPattern";
+import MainPage from "./MainPage";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   return (
     <>
-      <DesignPattern/>
+      <MainPage />
     </>
-  )
+  );
 }
 
-export default App
+export default App;
