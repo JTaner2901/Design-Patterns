@@ -1,16 +1,14 @@
-import { useState } from "react";
-import "./App.css";
-import DesignPattern from "./DesignPattern";
+import { Routes, Route } from "react-router-dom";
 import MainPage from "./MainPage";
+import DesignPattern from "./DesignPattern";
+import Fullscreenvideo from "./components/Fullscreenvideo";
 
-function App() {
-  const [count, setCount] = useState(0);
-
+export default function App() {
   return (
-    <>
-      <MainPage />
-    </>
+    <Routes>
+      <Route path="/" element={<MainPage />} />
+      <Route path="/design-pattern" element={<DesignPattern />} />
+      <Route path="/fullscreen-video" element={<Fullscreenvideo />} />
+    </Routes>
   );
 }
-
-export default App;
