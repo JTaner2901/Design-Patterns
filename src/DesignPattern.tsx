@@ -9,18 +9,15 @@ type UISettings = {
   spread: number;
   shapeKey: ShapeKey;
   organicMode: boolean;
+  organicIntensity: number;
   morphMode: boolean;
   randomShapes: boolean;
+  cycleColors: boolean;
+  autoRotate: boolean;
+  rotateSpeed: number;
 };
 
-type ShapeKey =
-  | "box"
-  | "sphere"
-  | "cone"
-  | "torus"
-  | "cylinder"
-  | "star"
-  | "random";
+type ShapeKey = "box" | "sphere" | "cone" | "torus" | "cylinder" | "star";
 
 const COLOR_PRESETS = [
   { name: "Blue", a: [0, 180, 255], b: [20, 60, 220] },
@@ -59,42 +56,50 @@ type ShapeFn = (
   t: number,
   wave: number,
   organic: boolean,
+  intensity: number,
 ) => void;
 
 const shapeRegistry: Record<string, ShapeFn> = {
-  box: (p, size, t, wave, organic) => {
+  box: (p, size, t, wave, organic, intensity) => {
     const pulse = organic
-      ? size * (1 + 0.18 * Math.sin(t * 3.1 + wave * 6.28))
+      ? size * (1 + intensity * 0.18 * Math.sin(t * 3.1 + wave * 6.28))
       : size;
     p.box(pulse);
   },
-  sphere: (p, size, t, wave, organic) => {
+  sphere: (p, size, t, wave, organic, intensity) => {
     const r = organic
-      ? size * 0.55 * (1 + 0.15 * Math.sin(t * 2.7 + wave * 6.28))
-      : size * 0.55;
-    p.sphere(r, 6, 5);
+      ? size * 0.6 * (1 + intensity * 0.15 * Math.sin(t * 2.7 + wave * 6.28))
+      : size * 0.6;
+    // Flat circle drawn as a polygon in the XY plane
+    const steps = 32;
+    p.beginShape();
+    for (let i = 0; i <= steps; i++) {
+      const angle = (i / steps) * Math.PI * 2;
+      p.vertex(Math.cos(angle) * r, Math.sin(angle) * r, 0);
+    }
+    p.endShape(p.CLOSE);
   },
-  cone: (p, size, t, wave, organic) => {
+  cone: (p, size, t, wave, organic, intensity) => {
     const h = organic
-      ? size * (1.4 + 0.3 * Math.sin(t * 2.2 + wave * 6.28))
+      ? size * (1.4 + intensity * 0.3 * Math.sin(t * 2.2 + wave * 6.28))
       : size * 1.4;
     p.cone(size * 0.5, h, 6, 1, false);
   },
-  torus: (p, size, t, wave, organic) => {
+  torus: (p, size, t, wave, organic, intensity) => {
     const tube = organic
-      ? size * (0.12 + 0.06 * Math.sin(t * 3.5 + wave * 6.28))
+      ? size * (0.12 + intensity * 0.06 * Math.sin(t * 3.5 + wave * 6.28))
       : size * 0.12;
     p.torus(size * 0.45, tube, 8, 5);
   },
-  cylinder: (p, size, t, wave, organic) => {
+  cylinder: (p, size, t, wave, organic, intensity) => {
     const h = organic
-      ? size * (1.2 + 0.25 * Math.sin(t * 1.8 + wave * 6.28))
+      ? size * (1.2 + intensity * 0.25 * Math.sin(t * 1.8 + wave * 6.28))
       : size * 1.2;
     p.cylinder(size * 0.38, h, 6, 1, false, false);
   },
-  star: (p, size, t, wave, organic) => {
+  star: (p, size, t, wave, organic, intensity) => {
     const pulse = organic
-      ? size * (1 + 0.2 * Math.sin(t * 4.0 + wave * 6.28))
+      ? size * (1 + intensity * 0.2 * Math.sin(t * 4.0 + wave * 6.28))
       : size;
     p.push();
     p.box(pulse, pulse * 0.3, pulse * 0.3);
@@ -133,8 +138,12 @@ export default function DesignPattern() {
   const [spread, setSpread] = useState(1.0);
   const [shapeKey, setShapeKey] = useState<ShapeKey>("box");
   const [organicMode, setOrganicMode] = useState(false);
+  const [organicIntensity, setOrganicIntensity] = useState(1.0);
   const [morphMode, setMorphMode] = useState(false);
   const [randomShapes, setRandomShapes] = useState(false);
+  const [cycleColors, setCycleColors] = useState(false);
+  const [autoRotate, setAutoRotate] = useState(false);
+  const [rotateSpeed, setRotateSpeed] = useState(0.3);
   const [panelOpen, setPanelOpen] = useState(true);
 
   const settingsRef = useRef<UISettings>({
@@ -144,8 +153,12 @@ export default function DesignPattern() {
     spread: 1.0,
     shapeKey: "box",
     organicMode: false,
+    organicIntensity: 1.0,
     morphMode: false,
     randomShapes: false,
+    cycleColors: false,
+    autoRotate: false,
+    rotateSpeed: 0.3,
   });
 
   const morphRef = useRef({
@@ -205,7 +218,11 @@ export default function DesignPattern() {
     if (key === "colorIndex") setColorIndex(value as number);
     if (key === "spread") setSpread(value as number);
     if (key === "organicMode") setOrganicMode(value as boolean);
+    if (key === "organicIntensity") setOrganicIntensity(value as number);
     if (key === "morphMode") setMorphMode(value as boolean);
+    if (key === "cycleColors") setCycleColors(value as boolean);
+    if (key === "autoRotate") setAutoRotate(value as boolean);
+    if (key === "rotateSpeed") setRotateSpeed(value as number);
     if (key === "randomShapes") {
       setRandomShapes(value as boolean);
       if (value)
@@ -243,6 +260,9 @@ export default function DesignPattern() {
       const dragSpeed = 0.1,
         friction = 0.86;
 
+      // Smooth color cycling state (lives inside the sketch)
+      let cycleT = 0; // 0..N (float, wraps per preset count)
+
       p.setup = () => {
         const w = containerRef.current?.offsetWidth || 800;
         const h = containerRef.current?.offsetHeight || 500;
@@ -260,9 +280,42 @@ export default function DesignPattern() {
           spread,
           shapeKey,
           organicMode,
+          organicIntensity,
           randomShapes,
         } = settingsRef.current;
-        const preset = COLOR_PRESETS[colorIndex];
+        // Smooth color cycling: advance cycleT each frame when active
+        if (settingsRef.current.cycleColors) {
+          cycleT = (cycleT + 0.004) % COLOR_PRESETS.length;
+        } else {
+          // Snap cycleT to current colorIndex so resuming cycle feels natural
+          cycleT = colorIndex;
+        }
+        const cycleFrom = Math.floor(cycleT) % COLOR_PRESETS.length;
+        const cycleTo = (cycleFrom + 1) % COLOR_PRESETS.length;
+        const cycleFrac = cycleT - Math.floor(cycleT);
+        // Smoothstep for eased blend
+        const sf = cycleFrac * cycleFrac * (3 - 2 * cycleFrac);
+        const blendedPreset = {
+          a: [
+            COLOR_PRESETS[cycleFrom].a[0] * (1 - sf) +
+              COLOR_PRESETS[cycleTo].a[0] * sf,
+            COLOR_PRESETS[cycleFrom].a[1] * (1 - sf) +
+              COLOR_PRESETS[cycleTo].a[1] * sf,
+            COLOR_PRESETS[cycleFrom].a[2] * (1 - sf) +
+              COLOR_PRESETS[cycleTo].a[2] * sf,
+          ],
+          b: [
+            COLOR_PRESETS[cycleFrom].b[0] * (1 - sf) +
+              COLOR_PRESETS[cycleTo].b[0] * sf,
+            COLOR_PRESETS[cycleFrom].b[1] * (1 - sf) +
+              COLOR_PRESETS[cycleTo].b[1] * sf,
+            COLOR_PRESETS[cycleFrom].b[2] * (1 - sf) +
+              COLOR_PRESETS[cycleTo].b[2] * sf,
+          ],
+        };
+        const preset = settingsRef.current.cycleColors
+          ? blendedPreset
+          : COLOR_PRESETS[colorIndex];
         const morph = morphRef.current;
         if (morph.transitioning) {
           morph.blend = Math.min(1, morph.blend + 0.035);
@@ -272,9 +325,15 @@ export default function DesignPattern() {
         p.camera(0, 0, camDist, 0, 0, 0, 0, 1, 0);
         velX *= friction;
         velY *= friction;
+        // Auto-rotate: add to velocity so manual drag can still override naturally
+        if (settingsRef.current.autoRotate) {
+          velY += settingsRef.current.rotateSpeed * 0.18;
+        }
         targetRotX += velX;
         targetRotY += velY;
         targetRotX = p.constrain(targetRotX, -85, 85);
+        // Wrap targetRotY so it doesn't grow unbounded during auto-rotate
+        targetRotY = targetRotY % 360;
         rotX = p.lerp(rotX, targetRotX, 0.12);
         rotY = p.lerp(rotY, targetRotY, 0.12);
         p.rotateX(rotX);
@@ -287,6 +346,7 @@ export default function DesignPattern() {
           preset,
           shapeKey,
           organicMode,
+          organicIntensity,
           randomShapes,
         );
       };
@@ -296,9 +356,10 @@ export default function DesignPattern() {
         rows: number,
         cols: number,
         spread: number,
-        preset: (typeof COLOR_PRESETS)[number],
+        preset: { a: number[]; b: number[] },
         shapeKey: ShapeKey,
         organic: boolean,
+        organicIntensity: number,
         randomShapes: boolean,
       ) {
         const t = p.frameCount * 0.02;
@@ -319,8 +380,12 @@ export default function DesignPattern() {
             if (organic) {
               const noiseVal =
                 0.5 +
-                0.3 * Math.sin(t * 1.1 + z * 0.07 + x * 0.05) +
-                0.2 * Math.sin(t * 2.3 - z * 0.12 + x * 0.09);
+                organicIntensity *
+                  0.3 *
+                  Math.sin(t * 1.1 + z * 0.07 + x * 0.05) +
+                organicIntensity *
+                  0.2 *
+                  Math.sin(t * 2.3 - z * 0.12 + x * 0.09);
               sz = boxSz * (0.5 + noiseVal * 1.0);
             }
             const r = p.lerp(preset.b[0], preset.a[0], wave);
@@ -337,15 +402,23 @@ export default function DesignPattern() {
               p.rotateX(x);
               p.translate(0, radius, 0);
               if (organic) {
-                p.rotateY(t * 30 + z * 0.5 + x * 0.3);
-                p.rotateX(t * 20 * Math.sin(z * 0.04));
+                p.rotateY(t * 30 * organicIntensity + z * 0.5 + x * 0.3);
+                p.rotateX(t * 20 * organicIntensity * Math.sin(z * 0.04));
               }
               p.stroke(r, g, b, alpha);
               p.strokeWeight(
                 gl > 0 ? SETTINGS.strokeWeight * 2 : SETTINGS.strokeWeight,
               );
               p.noFill();
-              renderShape(p, cellShape, glowSize, t, wave, organic);
+              renderShape(
+                p,
+                cellShape,
+                glowSize,
+                t,
+                wave,
+                organic,
+                organicIntensity,
+              );
               p.pop();
             }
             ci++;
@@ -361,6 +434,7 @@ export default function DesignPattern() {
         t: number,
         wave: number,
         organic: boolean,
+        organicIntensity: number,
       ) {
         const morph = morphRef.current;
         if (!morph.transitioning || morph.blend >= 1) {
@@ -370,6 +444,7 @@ export default function DesignPattern() {
             t,
             wave,
             organic,
+            organicIntensity,
           );
           return;
         }
@@ -381,6 +456,7 @@ export default function DesignPattern() {
           t,
           wave,
           organic,
+          organicIntensity,
         );
         p.pop();
         p.push();
@@ -391,6 +467,7 @@ export default function DesignPattern() {
           t,
           wave,
           organic,
+          organicIntensity,
         );
         p.pop();
       }
@@ -463,12 +540,11 @@ export default function DesignPattern() {
 
   const SHAPE_OPTIONS: { key: ShapeKey; label: string }[] = [
     { key: "box", label: "□ Box" },
-    { key: "sphere", label: "○ Sphere" },
+    { key: "sphere", label: "○ Circle" },
     { key: "cone", label: "△ Cone" },
     { key: "torus", label: "◎ Torus" },
     { key: "cylinder", label: "⬭ Cylinder" },
     { key: "star", label: "✦ Star" },
-    { key: "random", label: "⁂ Random" },
   ];
 
   return (
@@ -637,7 +713,13 @@ export default function DesignPattern() {
         >
           MODES
         </div>
-        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            marginBottom: organicMode ? 8 : 14,
+          }}
+        >
           <button
             style={organicMode ? btnActive : btnInactive}
             onClick={() => sync("organicMode", !organicMode)}
@@ -658,6 +740,59 @@ export default function DesignPattern() {
           </button>
         </div>
 
+        {/* Organic Intensity Slider — only shown when organic is active */}
+        {organicMode && (
+          <div style={{ ...labelStyle, marginBottom: 14, opacity: 0.9 }}>
+            <span style={{ width: 60 }}>
+              Intensity: {organicIntensity.toFixed(2)}
+            </span>
+            <input
+              type="range"
+              min={0.0}
+              max={3.0}
+              step={0.05}
+              value={organicIntensity}
+              style={sliderStyle}
+              onChange={(e) => sync("organicIntensity", Number(e.target.value))}
+            />
+          </div>
+        )}
+
+        <div
+          style={{
+            color: "#00b4ff",
+            marginBottom: 8,
+            letterSpacing: 2,
+            fontSize: 10,
+          }}
+        >
+          ROTATION
+        </div>
+        <div
+          style={{ display: "flex", gap: 6, marginBottom: autoRotate ? 8 : 14 }}
+        >
+          <button
+            style={autoRotate ? btnActive : btnInactive}
+            onClick={() => sync("autoRotate", !autoRotate)}
+          >
+            ↻ Auto-Rotate
+          </button>
+        </div>
+        {autoRotate && (
+          <div style={{ ...labelStyle, marginBottom: 14, opacity: 0.9 }}>
+            <span style={{ width: 60 }}>Speed: {rotateSpeed.toFixed(2)}</span>
+            <input
+              type="range"
+              min={0.05}
+              max={3.0}
+              step={0.05}
+              value={rotateSpeed}
+              style={sliderStyle}
+              onChange={(e) => sync("rotateSpeed", Number(e.target.value))}
+            />
+          </div>
+        )}
+
         <div
           style={{
             color: "#00b4ff",
@@ -672,12 +807,22 @@ export default function DesignPattern() {
           {COLOR_PRESETS.map((c, i) => (
             <button
               key={i}
-              style={i === colorIndex ? btnActive : btnInactive}
-              onClick={() => sync("colorIndex", i)}
+              style={i === colorIndex && !cycleColors ? btnActive : btnInactive}
+              onClick={() => {
+                sync("cycleColors", false);
+                sync("colorIndex", i);
+              }}
             >
               {c.name}
             </button>
           ))}
+          <button
+            style={cycleColors ? btnActive : btnInactive}
+            onClick={() => sync("cycleColors", !cycleColors)}
+            title="Automatically cycle through all colors"
+          >
+            ↻ Cycle
+          </button>
         </div>
       </div>
 
