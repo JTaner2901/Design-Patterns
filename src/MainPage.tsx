@@ -1,13 +1,21 @@
 import ColorBends from "./components/ColorBends";
 import SplitText from "./components/SplitText";
-import Projects from "./components/Projects";
+import About from "./components/About";
 import { useState } from "react";
+import ShapesSection from "./components/ShapesSection";
+import Progresssection from "./components/Progresssection";
+import DesignPattern from "./DesignPattern";
+import TechStackSection from "./components/Techstacksection";
+import Targetcursor from "./components/Targetcursor";
+import CTASection from "./components/CTASection";
+import Footer from "./components/Footer";
 
 export default function MainPage() {
   const [showSubtitle, setShowSubtitle] = useState(false);
 
   return (
     <>
+      <Targetcursor />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;700;800&display=swap');
 
@@ -204,8 +212,23 @@ export default function MainPage() {
           )}
         </section>
 
-        {/* ─── PROJECTS SECTION ─── */}
-        <Projects />
+        {/* ─── ABOUT SECTION ─── */}
+        <About />
+
+        {/* ─── SHAPES SECTION ─── */}
+        <ShapesSection />
+
+        {/* ─── PROGRESS SECTION ─── */}
+        <Progresssection />
+
+        {/* ─── TECH STACK SECTION ─── */}
+        <TechStackSection />
+
+        {/* ─── CTA SECTION ─── */}
+        <CTASection />
+
+        {/* ─── FOOTER SECTION ─── */}
+        <Footer />
       </div>
     </>
   );
