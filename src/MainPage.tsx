@@ -9,6 +9,7 @@ import TechStackSection from "./components/Techstacksection";
 import Targetcursor from "./components/Targetcursor";
 import CTASection from "./components/CTASection";
 import Footer from "./components/Footer";
+import PanelGuideSection from "./components/PanelGuideSection";
 
 export default function MainPage() {
   const [showSubtitle, setShowSubtitle] = useState(false);
@@ -220,6 +221,9 @@ export default function MainPage() {
 
         {/* ─── PROGRESS SECTION ─── */}
         <Progresssection />
+
+        {/* ─── Panel Guide SECTION ─── */}
+        <PanelGuideSection />
 
         {/* ─── TECH STACK SECTION ─── */}
         <TechStackSection />
