@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import p5 from "p5";
 import Screenshot from "./components/Screenshot";
 import ControlPanel from "./ControlPanel";
@@ -551,17 +551,11 @@ export default function DesignPattern() {
                 const pairIndex = Math.floor(idx / 2);
                 const strand = idx % 2;
                 const turns = 3;
-                const twist =
-                  (pairIndex / Math.max(totalPairs - 1, 1)) *
-                  turns *
-                  Math.PI *
-                  2;
+                const twist = (pairIndex / Math.max(totalPairs - 1, 1)) * turns * Math.PI * 2;
                 const helixAngle = twist + strand * Math.PI;
                 const helixRadius = radius * 0.35;
                 const helixHeight = radius * 2.2;
-                const hy =
-                  (pairIndex / Math.max(totalPairs - 1, 1)) * helixHeight -
-                  helixHeight / 2;
+                const hy = (pairIndex / Math.max(totalPairs - 1, 1)) * helixHeight - helixHeight / 2;
                 p.translate(
                   Math.cos(helixAngle) * helixRadius,
                   hy,
@@ -675,6 +669,64 @@ export default function DesignPattern() {
         );
         return false;
       };
+
+      // ── Touch: Ein Finger dreht, zwei Finger zoomen (Pinch) ──
+      // Touches übers Control Panel werden ignoriert, damit natives
+      // Scrollen im Panel weiter funktioniert (gleiches Prinzip wie
+      // beim Mausrad oben).
+      let pinchStartDist = 0;
+      let pinchStartZoom = SETTINGS.zoomDefault;
+
+      const isOverPanel = (e?: TouchEvent) => {
+        const target = e?.target as HTMLElement | null;
+        return !!(target && target.closest(".dp-panel"));
+      };
+
+      p.touchStarted = (e?: TouchEvent) => {
+        if (isOverPanel(e)) return true;
+        if (p.touches.length === 1) {
+          dragging = true;
+          lastX = (p.touches[0] as any).x;
+          lastY = (p.touches[0] as any).y;
+        } else if (p.touches.length === 2) {
+          dragging = false;
+          const t0 = p.touches[0] as any;
+          const t1 = p.touches[1] as any;
+          pinchStartDist = Math.hypot(t0.x - t1.x, t0.y - t1.y);
+          pinchStartZoom = targetCamDist;
+        }
+        return false;
+      };
+
+      p.touchMoved = (e?: TouchEvent) => {
+        if (isOverPanel(e)) return true;
+        if (p.touches.length === 1 && dragging) {
+          const t0 = p.touches[0] as any;
+          velY += (t0.x - lastX) * dragSpeed;
+          velX += (t0.y - lastY) * dragSpeed;
+          lastX = t0.x;
+          lastY = t0.y;
+        } else if (p.touches.length === 2 && pinchStartDist > 0) {
+          const t0 = p.touches[0] as any;
+          const t1 = p.touches[1] as any;
+          const dist = Math.hypot(t0.x - t1.x, t0.y - t1.y);
+          const scale = pinchStartDist / Math.max(dist, 1);
+          targetCamDist = p.constrain(
+            pinchStartZoom * scale,
+            SETTINGS.zoomMin,
+            SETTINGS.zoomMax,
+          );
+        }
+        return false;
+      };
+
+      p.touchEnded = (e?: TouchEvent) => {
+        if (isOverPanel(e)) return true;
+        dragging = false;
+        pinchStartDist = 0;
+        return false;
+      };
+
       p.windowResized = () => {
         if (!containerRef.current) return;
         p.resizeCanvas(
@@ -719,7 +771,7 @@ export default function DesignPattern() {
     >
       <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
 
-      <Screenshot targetRef={containerRef} />
+      <Screenshot targetRef={containerRef as RefObject<HTMLElement>} />
 
       <ControlPanel
         state={state}

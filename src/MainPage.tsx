@@ -4,7 +4,6 @@ import About from "./components/About";
 import { useState } from "react";
 import ShapesSection from "./components/ShapesSection";
 import Progresssection from "./components/Progresssection";
-import DesignPattern from "./DesignPattern";
 import TechStackSection from "./components/Techstacksection";
 import Targetcursor from "./components/Targetcursor";
 import CTASection from "./components/CTASection";
@@ -30,6 +29,15 @@ export default function MainPage() {
           -webkit-text-stroke: 0.5px rgba(0, 210, 255, 0.7);
           paint-order: stroke fill;
         }
+
+        /* Fallback-Technik: Browser, die 100svh nicht kennen, ignorieren
+           die zweite Deklaration und bleiben bei 100vh. Browser, die es
+           kennen, überschreiben mit dem korrekteren Wert (ohne die
+           mobile Adressleiste mitzuzählen). */
+        .hero-section {
+          height: 100vh;
+          height: 100svh;
+        }
       `}</style>
 
       {/* Scrollbarer Seiten-Wrapper */}
@@ -44,10 +52,10 @@ export default function MainPage() {
       >
         {/* ─── HERO SECTION ─── */}
         <section
+          className="hero-section"
           style={{
             position: "relative",
             width: "100%",
-            height: "100vh",
             overflow: "hidden",
           }}
         >
@@ -61,6 +69,7 @@ export default function MainPage() {
             }}
           >
             <ColorBends
+              style={{ width: "100%", height: "100%", display: "block" }}
               colors={["#00b4ff"]}
               rotation={90}
               speed={0.2}

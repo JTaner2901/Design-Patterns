@@ -1,11 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type Dispatch,
-  type MutableRefObject,
-  type SetStateAction,
-} from "react";
+import { useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import type { UISettings } from "./DesignPattern";
 
 interface CutsceneProps {
@@ -47,19 +40,15 @@ class CutsceneAudio {
   private master: GainNode | null = null;
 
   private subOsc: OscillatorNode | null = null;
-  private subGain: GainNode | null = null;
 
   private padOsc1: OscillatorNode | null = null;
   private padOsc2: OscillatorNode | null = null;
-  private padGain: GainNode | null = null;
   private padFilter: BiquadFilterNode | null = null;
 
   private shimmerOsc: OscillatorNode | null = null;
   private shimmerGain: GainNode | null = null;
-  private shimmerFilter: BiquadFilterNode | null = null;
 
   private breatheLfo: OscillatorNode | null = null;
-  private breatheLfoGain: GainNode | null = null;
 
   private reverbSend: GainNode | null = null;
 
@@ -93,7 +82,6 @@ class CutsceneAudio {
       subOsc.connect(subGain);
       subOsc.start();
       this.subOsc = subOsc;
-      this.subGain = subGain;
 
       // ── Pad (warmer Körper, Triangle statt Sägezahn) ──
       const padFilter = ctx.createBiquadFilter();
@@ -121,7 +109,6 @@ class CutsceneAudio {
       padOsc2.start();
       this.padOsc1 = padOsc1;
       this.padOsc2 = padOsc2;
-      this.padGain = padGain;
       this.padFilter = padFilter;
 
       // ── Langsames "Atmen" auf dem Pad-Filter statt Lautstärke-Tremolo ──
@@ -133,7 +120,6 @@ class CutsceneAudio {
       breatheLfoGain.connect(padFilter.frequency);
       breatheLfo.start();
       this.breatheLfo = breatheLfo;
-      this.breatheLfoGain = breatheLfoGain;
 
       // ── Shimmer (nur bei hoher Tension hörbar) ──
       const shimmerFilter = ctx.createBiquadFilter();
@@ -154,7 +140,6 @@ class CutsceneAudio {
       shimmerOsc.start();
       this.shimmerOsc = shimmerOsc;
       this.shimmerGain = shimmerGain;
-      this.shimmerFilter = shimmerFilter;
 
       // Langsamer, cinematischer Einschwing statt schnellem Fade
       const now = ctx.currentTime;
@@ -185,26 +170,14 @@ class CutsceneAudio {
 
     const padFreq = subFreq * 2;
     this.padOsc1.frequency.linearRampToValueAtTime(padFreq, now + rampTime);
-    this.padOsc2.frequency.linearRampToValueAtTime(
-      padFreq * 1.004,
-      now + rampTime,
-    );
-    this.padFilter.frequency.linearRampToValueAtTime(
-      420 + level * 1400,
-      now + rampTime,
-    );
+    this.padOsc2.frequency.linearRampToValueAtTime(padFreq * 1.004, now + rampTime);
+    this.padFilter.frequency.linearRampToValueAtTime(420 + level * 1400, now + rampTime);
 
     // Shimmer bleibt bei niedriger Tension praktisch stumm, kommt erst
     // ab der zweiten Hälfte deutlich rein — vermeidet frühes Bzzz-Gefühl
     const shimmerLevel = Math.max(0, level - 0.35) / 0.65;
-    this.shimmerOsc.frequency.linearRampToValueAtTime(
-      padFreq * 2,
-      now + rampTime,
-    );
-    this.shimmerGain.gain.linearRampToValueAtTime(
-      shimmerLevel * 0.09,
-      now + rampTime,
-    );
+    this.shimmerOsc.frequency.linearRampToValueAtTime(padFreq * 2, now + rampTime);
+    this.shimmerGain.gain.linearRampToValueAtTime(shimmerLevel * 0.09, now + rampTime);
   }
 
   /** kurzer perkussiver Noise-Swell für die Burst-Momente, mit etwas Hall */
@@ -244,21 +217,18 @@ class CutsceneAudio {
     master.gain.setValueAtTime(master.gain.value, now);
     master.gain.linearRampToValueAtTime(0, now + fadeTime);
     const { subOsc, padOsc1, padOsc2, shimmerOsc, breatheLfo } = this;
-    setTimeout(
-      () => {
-        try {
-          subOsc?.stop();
-          padOsc1?.stop();
-          padOsc2?.stop();
-          shimmerOsc?.stop();
-          breatheLfo?.stop();
-          ctx.close();
-        } catch {
-          /* ignore */
-        }
-      },
-      fadeTime * 1000 + 150,
-    );
+    setTimeout(() => {
+      try {
+        subOsc?.stop();
+        padOsc1?.stop();
+        padOsc2?.stop();
+        shimmerOsc?.stop();
+        breatheLfo?.stop();
+        ctx.close();
+      } catch {
+        /* ignore */
+      }
+    }, fadeTime * 1000 + 150);
     this.ctx = null;
   }
 }
@@ -469,10 +439,7 @@ export default function Cutscene({
           }}
         >
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-            <path
-              d="M2.5 1.5L11 6.5L2.5 11.5V1.5Z"
-              fill="rgba(0,210,255,0.85)"
-            />
+            <path d="M2.5 1.5L11 6.5L2.5 11.5V1.5Z" fill="rgba(0,210,255,0.85)" />
           </svg>
         </button>
       )}
@@ -497,7 +464,7 @@ export default function Cutscene({
           top: 0,
           left: 0,
           right: 0,
-          height: playing ? "9vh" : "0vh",
+          height: playing ? "min(9vh, 56px)" : "0vh",
           background: "#000",
           zIndex: 30,
           pointerEvents: "none",
@@ -510,7 +477,7 @@ export default function Cutscene({
           bottom: 0,
           left: 0,
           right: 0,
-          height: playing ? "9vh" : "0vh",
+          height: playing ? "min(9vh, 56px)" : "0vh",
           background: "#000",
           zIndex: 30,
           pointerEvents: "none",
@@ -523,7 +490,7 @@ export default function Cutscene({
         <div
           style={{
             position: "fixed",
-            bottom: "calc(9vh + 14px)",
+            bottom: "calc(min(9vh, 56px) + 14px)",
             right: 16,
             zIndex: 31,
             color: "rgba(255,255,255,0.35)",
