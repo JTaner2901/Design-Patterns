@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 /* ─────────────────────────────────────────────
@@ -34,9 +34,7 @@ function buildGeometry(key: ShapeKey): THREE.Object3D {
     case "torus":
       return new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.28, 16, 48));
     case "cylinder":
-      return new THREE.Mesh(
-        new THREE.CylinderGeometry(0.75, 0.75, 1.6, 6, 1, true),
-      );
+      return new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 1.6, 6, 1, true));
     case "star": {
       const group = new THREE.Group();
       const armGeom = (sx: number, sy: number, sz: number) =>
@@ -57,13 +55,7 @@ function buildGeometry(key: ShapeKey): THREE.Object3D {
    pro Karte. Zeigt nur die Form, sonst nichts.
 ───────────────────────────────────────────── */
 
-function ShapePreview({
-  shapeKey,
-  color,
-}: {
-  shapeKey: ShapeKey;
-  color: string;
-}) {
+function ShapePreview({ shapeKey, color }: { shapeKey: ShapeKey; color: string }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -218,9 +210,7 @@ function ShapeCard({
         }}
       />
 
-      <div
-        style={{ width: "100%", aspectRatio: "1 / 1", position: "relative" }}
-      >
+      <div style={{ width: "100%", aspectRatio: "1 / 1", position: "relative" }}>
         {visible && <ShapePreview shapeKey={shape.key} color={shape.color} />}
       </div>
 
@@ -358,12 +348,7 @@ export default function ShapesSection() {
         {/* Cards */}
         <div className="shapes-grid">
           {SHAPES.map((shape, i) => (
-            <ShapeCard
-              key={shape.key}
-              shape={shape}
-              index={i}
-              visible={visible}
-            />
+            <ShapeCard key={shape.key} shape={shape} index={i} visible={visible} />
           ))}
         </div>
       </section>

@@ -1,10 +1,5 @@
 import { useState, type MutableRefObject } from "react";
-import {
-  COLOR_PRESETS,
-  SHAPE_OPTIONS,
-  DISTRIBUTION_OPTIONS,
-  type UISettings,
-} from "./DesignPattern";
+import { COLOR_PRESETS, SHAPE_OPTIONS, DISTRIBUTION_OPTIONS, type UISettings } from "./DesignPattern";
 
 interface ControlPanelProps {
   state: UISettings;
@@ -35,8 +30,7 @@ const btnBase: React.CSSProperties = {
   fontWeight: 500,
   fontSize: 11,
   letterSpacing: "0.02em",
-  transition:
-    "background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
+  transition: "background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
 };
 const btnActive: React.CSSProperties = {
   ...btnBase,
@@ -66,9 +60,10 @@ const divider: React.CSSProperties = {
   margin: "14px 0",
 };
 const valueLabel: React.CSSProperties = {
-  width: 78,
+  width: 70,
+  flexShrink: 0,
   fontFamily: "'Poppins', sans-serif",
-  fontSize: 11.5,
+  fontSize: 11,
   color: "rgba(255,255,255,0.75)",
   fontWeight: 400,
 };
@@ -100,13 +95,7 @@ function ColorDial({
   const pointerAngle = angleFor(colorIndex) + 90;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        padding: "4px 0 2px",
-      }}
-    >
+    <div style={{ display: "flex", justifyContent: "center", padding: "4px 0 2px" }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <circle
           cx={center}
@@ -130,12 +119,8 @@ function ColorDial({
             filter: "drop-shadow(0 0 4px rgba(0,210,255,0.8))",
             transformOrigin: `${center}px ${center}px`,
             transform: cycleColors ? undefined : `rotate(${pointerAngle}deg)`,
-            animation: cycleColors
-              ? "dp-dial-spin 20s linear infinite"
-              : "none",
-            transition: cycleColors
-              ? "none"
-              : "transform 0.45s cubic-bezier(0.34,1.56,0.64,1)",
+            animation: cycleColors ? "dp-dial-spin 20s linear infinite" : "none",
+            transition: cycleColors ? "none" : "transform 0.45s cubic-bezier(0.34,1.56,0.64,1)",
           }}
         />
 
@@ -177,9 +162,7 @@ function ColorDial({
           strokeWidth={1}
           style={{
             cursor: "pointer",
-            filter: cycleColors
-              ? "drop-shadow(0 0 6px rgba(0,210,255,0.9))"
-              : "none",
+            filter: cycleColors ? "drop-shadow(0 0 6px rgba(0,210,255,0.9))" : "none",
             transition: "all 0.25s ease",
           }}
           onClick={onToggleCycle}
@@ -272,7 +255,9 @@ export default function ControlPanel({
         .dp-slider {
           -webkit-appearance: none;
           appearance: none;
-          width: 108px;
+          width: 100%;
+          flex: 1 1 auto;
+          min-width: 0;
           height: 4px;
           border-radius: 999px;
           background: linear-gradient(to right, #00d2ff var(--dp-pct), rgba(255,255,255,0.12) var(--dp-pct));
@@ -342,10 +327,7 @@ export default function ControlPanel({
           width: 34,
           height: 34,
           borderRadius: 10,
-          background:
-            panelOpen || hoverToggle
-              ? "rgba(0,180,255,0.14)"
-              : "rgba(10,14,20,0.6)",
+          background: panelOpen || hoverToggle ? "rgba(0,180,255,0.14)" : "rgba(10,14,20,0.6)",
           border: `1px solid ${panelOpen || hoverToggle ? "rgba(0,210,255,0.45)" : "rgba(255,255,255,0.1)"}`,
           backdropFilter: "blur(8px)",
           cursor: "pointer",
@@ -358,21 +340,11 @@ export default function ControlPanel({
       >
         {panelOpen ? (
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path
-              d="M2 2L12 12M12 2L2 12"
-              stroke="rgba(0,210,255,0.9)"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
+            <path d="M2 2L12 12M12 2L2 12" stroke="rgba(0,210,255,0.9)" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         ) : (
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path
-              d="M2 3.5H12M2 7H12M2 10.5H12"
-              stroke="rgba(0,210,255,0.85)"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
+            <path d="M2 3.5H12M2 7H12M2 10.5H12" stroke="rgba(0,210,255,0.85)" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         )}
       </button>
@@ -392,7 +364,7 @@ export default function ControlPanel({
           borderRadius: 16,
           border: "1px solid rgba(0,210,255,0.14)",
           boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
-          minWidth: 268,
+          width: "min(268px, calc(100vw - 40px))",
           maxHeight: "calc(100vh - 40px)",
           overflowY: "auto",
           userSelect: "none",
@@ -408,44 +380,17 @@ export default function ControlPanel({
       >
         {/* GEOMETRY */}
         <div style={sectionLabel}>Geometry</div>
-        <Slider
-          label="Rows"
-          value={rows}
-          min={2}
-          max={20}
-          step={1}
-          onChange={(v) => sync("rows", v)}
-        />
-        <Slider
-          label="Cols"
-          value={cols}
-          min={4}
-          max={40}
-          step={1}
-          onChange={(v) => sync("cols", v)}
-        />
-        <Slider
-          label="Spread"
-          value={spread}
-          min={0.2}
-          max={4.0}
-          step={0.05}
-          onChange={(v) => sync("spread", v)}
-        />
+        <Slider label="Rows" value={rows} min={2} max={20} step={1} onChange={(v) => sync("rows", v)} />
+        <Slider label="Cols" value={cols} min={4} max={40} step={1} onChange={(v) => sync("cols", v)} />
+        <Slider label="Spread" value={spread} min={0.2} max={4.0} step={0.05} onChange={(v) => sync("spread", v)} />
 
         <div style={divider} />
 
         {/* SHAPE */}
         <div style={sectionLabel}>Shape</div>
-        <div
-          style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 4 }}
-        >
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
           {SHAPE_OPTIONS.map(({ key, label }) => (
-            <button
-              key={key}
-              style={shapeKey === key ? btnActive : btnInactive}
-              onClick={() => sync("shapeKey", key)}
-            >
+            <button key={key} style={shapeKey === key ? btnActive : btnInactive} onClick={() => sync("shapeKey", key)}>
               {label}
             </button>
           ))}
@@ -455,9 +400,7 @@ export default function ControlPanel({
 
         {/* DISTRIBUTION */}
         <div style={sectionLabel}>Distribution</div>
-        <div
-          style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 4 }}
-        >
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
           {DISTRIBUTION_OPTIONS.map(({ key, label }) => (
             <button
               key={key}
@@ -473,29 +416,14 @@ export default function ControlPanel({
 
         {/* MODES */}
         <div style={sectionLabel}>Modes</div>
-        <div
-          style={{
-            display: "flex",
-            gap: 7,
-            marginBottom: organicMode ? 10 : 4,
-          }}
-        >
-          <button
-            style={organicMode ? btnActive : btnInactive}
-            onClick={() => sync("organicMode", !organicMode)}
-          >
+        <div style={{ display: "flex", gap: 7, marginBottom: organicMode ? 10 : 4 }}>
+          <button style={organicMode ? btnActive : btnInactive} onClick={() => sync("organicMode", !organicMode)}>
             ⬡ Organic
           </button>
-          <button
-            style={morphMode ? btnActive : btnInactive}
-            onClick={() => sync("morphMode", !morphMode)}
-          >
+          <button style={morphMode ? btnActive : btnInactive} onClick={() => sync("morphMode", !morphMode)}>
             ↭ Morph
           </button>
-          <button
-            style={randomShapes ? btnActive : btnInactive}
-            onClick={() => sync("randomShapes", !randomShapes)}
-          >
+          <button style={randomShapes ? btnActive : btnInactive} onClick={() => sync("randomShapes", !randomShapes)}>
             ⁂ Mixed
           </button>
         </div>
@@ -514,91 +442,42 @@ export default function ControlPanel({
 
         {/* ROTATION */}
         <div style={sectionLabel}>Rotation</div>
-        <div
-          style={{ display: "flex", gap: 7, marginBottom: autoRotate ? 10 : 4 }}
-        >
-          <button
-            style={autoRotate ? btnActive : btnInactive}
-            onClick={() => sync("autoRotate", !autoRotate)}
-          >
+        <div style={{ display: "flex", gap: 7, marginBottom: autoRotate ? 10 : 4 }}>
+          <button style={autoRotate ? btnActive : btnInactive} onClick={() => sync("autoRotate", !autoRotate)}>
             ↻ Auto-Rotate
           </button>
         </div>
         {autoRotate && (
-          <Slider
-            label="Speed"
-            value={rotateSpeed}
-            min={0.05}
-            max={3.0}
-            step={0.05}
-            onChange={(v) => sync("rotateSpeed", v)}
-          />
+          <Slider label="Speed" value={rotateSpeed} min={0.05} max={3.0} step={0.05} onChange={(v) => sync("rotateSpeed", v)} />
         )}
 
         <div style={divider} />
 
         {/* SPIRAL DRIFT */}
         <div style={sectionLabel}>Spiral Drift</div>
-        <div
-          style={{
-            display: "flex",
-            gap: 7,
-            marginBottom: spiralDrift ? 10 : 4,
-          }}
-        >
-          <button
-            style={spiralDrift ? btnActive : btnInactive}
-            onClick={() => sync("spiralDrift", !spiralDrift)}
-          >
+        <div style={{ display: "flex", gap: 7, marginBottom: spiralDrift ? 10 : 4 }}>
+          <button style={spiralDrift ? btnActive : btnInactive} onClick={() => sync("spiralDrift", !spiralDrift)}>
             ⟳ Spiral Drift
           </button>
         </div>
         {spiralDrift && (
-          <Slider
-            label="Speed"
-            value={spiralSpeed}
-            min={0.1}
-            max={5.0}
-            step={0.1}
-            onChange={(v) => sync("spiralSpeed", v)}
-          />
+          <Slider label="Speed" value={spiralSpeed} min={0.1} max={5.0} step={0.1} onChange={(v) => sync("spiralSpeed", v)} />
         )}
 
         <div style={divider} />
 
         {/* EXPLODE / IMPLODE */}
         <div style={sectionLabel}>Explode</div>
-        <div
-          style={{
-            display: "flex",
-            gap: 7,
-            marginBottom: explodePulse ? 10 : 4,
-          }}
-        >
-          <button
-            style={btnInactive}
-            onClick={() => {
-              burstRef.current = true;
-            }}
-          >
+        <div style={{ display: "flex", gap: 7, marginBottom: explodePulse ? 10 : 4 }}>
+          <button style={btnInactive} onClick={() => { burstRef.current = true; }}>
             ✦ Burst
           </button>
-          <button
-            style={explodePulse ? btnActive : btnInactive}
-            onClick={() => sync("explodePulse", !explodePulse)}
-          >
+          <button style={explodePulse ? btnActive : btnInactive} onClick={() => sync("explodePulse", !explodePulse)}>
             ◎ Pulse
           </button>
         </div>
         {explodePulse && (
-          <Slider
-            label="Speed"
-            value={explodeSpeed}
-            min={0.2}
-            max={4.0}
-            step={0.1}
-            onChange={(v) => sync("explodeSpeed", v)}
-          />
+          <Slider label="Speed" value={explodeSpeed} min={0.2} max={4.0} step={0.1} onChange={(v) => sync("explodeSpeed", v)} />
         )}
 
         <div style={divider} />
