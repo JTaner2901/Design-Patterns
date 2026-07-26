@@ -3,6 +3,7 @@ import p5 from "p5";
 import Screenshot from "./components/Screenshot";
 import ControlPanel from "./ControlPanel";
 import Cutscene from "./Cutscene";
+import DesktopOnlyGate, { useIsDesktop } from "./DesktopOnlyGate";
 
 /* ══════════════════════════════════════════════
    SYSTEM — Typen, Konstanten, Formen, Sketch.
@@ -178,6 +179,7 @@ function buildShapeGrid(rows: number, cols: number): ShapeKey[][] {
 
 export default function DesignPattern() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const isDesktop = useIsDesktop();
 
   const [rows, setRows] = useState(6);
   const [cols, setCols] = useState(12);
@@ -313,7 +315,7 @@ export default function DesignPattern() {
   };
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !isDesktop) return;
 
     const sketch = (p: p5) => {
       let rotX = 0,
@@ -551,11 +553,17 @@ export default function DesignPattern() {
                 const pairIndex = Math.floor(idx / 2);
                 const strand = idx % 2;
                 const turns = 3;
-                const twist = (pairIndex / Math.max(totalPairs - 1, 1)) * turns * Math.PI * 2;
+                const twist =
+                  (pairIndex / Math.max(totalPairs - 1, 1)) *
+                  turns *
+                  Math.PI *
+                  2;
                 const helixAngle = twist + strand * Math.PI;
                 const helixRadius = radius * 0.35;
                 const helixHeight = radius * 2.2;
-                const hy = (pairIndex / Math.max(totalPairs - 1, 1)) * helixHeight - helixHeight / 2;
+                const hy =
+                  (pairIndex / Math.max(totalPairs - 1, 1)) * helixHeight -
+                  helixHeight / 2;
                 p.translate(
                   Math.cos(helixAngle) * helixRadius,
                   hy,
@@ -761,47 +769,49 @@ export default function DesignPattern() {
   };
 
   return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
-
-      <Screenshot targetRef={containerRef as RefObject<HTMLElement>} />
-
-      <ControlPanel
-        state={state}
-        sync={sync}
-        burstRef={burstRef}
-        panelOpen={panelOpen}
-        onTogglePanel={() => setPanelOpen((v) => !v)}
-      />
-
-      <Cutscene
-        sync={sync}
-        burstRef={burstRef}
-        zoomTargetRef={zoomTargetRef}
-        setPanelOpen={setPanelOpen}
-      />
-
-      {/* Hint */}
+    <DesktopOnlyGate>
       <div
         style={{
-          position: "absolute",
-          bottom: 14,
-          right: 16,
-          color: "rgba(255,255,255,0.25)",
-          fontFamily: "monospace",
-          fontSize: 10,
-          pointerEvents: "none",
+          width: "100vw",
+          height: "100vh",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        drag to rotate · scroll to zoom
+        <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+
+        <Screenshot targetRef={containerRef as RefObject<HTMLElement>} />
+
+        <ControlPanel
+          state={state}
+          sync={sync}
+          burstRef={burstRef}
+          panelOpen={panelOpen}
+          onTogglePanel={() => setPanelOpen((v) => !v)}
+        />
+
+        <Cutscene
+          sync={sync}
+          burstRef={burstRef}
+          zoomTargetRef={zoomTargetRef}
+          setPanelOpen={setPanelOpen}
+        />
+
+        {/* Hint */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 14,
+            right: 16,
+            color: "rgba(255,255,255,0.25)",
+            fontFamily: "monospace",
+            fontSize: 10,
+            pointerEvents: "none",
+          }}
+        >
+          drag to rotate · scroll to zoom
+        </div>
       </div>
-    </div>
+    </DesktopOnlyGate>
   );
 }
